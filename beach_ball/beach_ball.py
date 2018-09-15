@@ -1,27 +1,53 @@
 import pygame, sys, time
 
 pygame.init()
+pygame.key.set_repeat(100, 50)
 screen = pygame.display.set_mode([640, 480])
-screen.fill([255, 255, 255])
-my_ball = pygame.image.load("beach_ball.png")
-x = 50
-y = 50
-x_speed = 5
-y_speed = 5
-
+background = pygame.Surface(screen.get_size())
+background.fill([255, 255, 255])
 clock = pygame.time.Clock()
 
-while True:
-    clock.tick(60)
-    pygame.draw.rect(screen, [255, 255, 255], [x, y, 90, 90], 0)
-    x += x_speed
-    y += y_speed
-    if x > screen.get_width() - 90 or x < 0:
-        x_speed = -x_speed
-    if y > screen.get_height() - 90 or y < 0:
-        y_speed = -y_speed
-    screen.blit(my_ball, [x, y])
-    pygame.display.flip()
+class Ball(pygame.sprite.Sprite):
+    def __init__(self, image_file, speed, location):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load(image_file)
+        self.rect = self.image.get_rect()
+        self.rect.left, self.rect.top = location
+        self.speed = speed
+    def move(self):
+        if self.rect.left <= screen.get_rect().left or \
+           self.rect.right >= screen.get_rect().right:
+            self.speed[0] = -self.speed[0]
+        newpos = self.rect.move(self.speed)
+        self.rect = newpos
+        
+my_ball = Ball("beach_ball.png", [10, 0], [20, 20])
+hold_down = False
+pygame.time.set_timer(pygame.USEREVENT, 1000)
+direction = 1
 
+while True:
     for event in pygame.event.get():
-        if event.type == pygame.QUIT: sys.exit()
+        if event.type == pygame.QUIT:
+            sys.exit()
+        elif event.type == pygame.USEREVENT:
+            my_ball.rect.centery += direction * 30
+            if my_ball.rect.top <= 0 or my_ball.rect.bottom >= screen.get_rect().bottom:
+                direction = -direction
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            hold_down = True
+        elif event.type == pygame.MOUSEBUTTONUP:
+            hold_down = False
+        elif event.type == pygame.MOUSEMOTION and hold_down:
+            my_ball.rect.center = event.pos
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                my_ball.rect.top -= 10
+            elif event.key == pygame.K_DOWN:
+                my_ball.rect.top += 10
+
+    clock.tick(30)
+    screen.blit(background, (0, 0))
+    my_ball.move()
+    screen.blit(my_ball.image, my_ball.rect)
+    pygame.display.flip()
