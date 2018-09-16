@@ -13,10 +13,13 @@ class MyBallClass(pygame.sprite.Sprite):
         if self.rect.left <= screen.get_rect().left or \
            self.rect.right >= screen.get_rect().right:
             self.speed[0] = -self.speed[0]
+            if self.rect.top < screen.get_height():
+                hit_wall.play()
         if self.rect.top <= 0:
             self.speed[1] = -self.speed[1]
             points += 1
             score_text = font.render(str(points), 1, (0, 0, 0))
+            get_point.play()
         self.rect = self.rect.move(self.speed)
 
 class MyPaddleClass(pygame.sprite.Sprite):
@@ -29,6 +32,7 @@ class MyPaddleClass(pygame.sprite.Sprite):
         self.rect.left, self.rect.top = location
 
 pygame.init()
+pygame.mixer.init()
 screen = pygame.display.set_mode([640, 480])
 clock = pygame.time.Clock()
 ball_speed = [10, 5]
@@ -43,6 +47,24 @@ score_text = font.render(str(points), 1, (0, 0, 0))
 textpos = [10, 10]
 done = False
 
+pygame.time.delay(1000)
+pygame.mixer.music.load("bg_music.mp3")
+pygame.mixer.music.set_volume(0.3)
+pygame.mixer.music.play(-1)
+hit = pygame.mixer.Sound("hit_paddle.wav")
+hit.set_volume(0.4)
+new_life = pygame.mixer.Sound("new_life.wav")
+new_life.set_volume(0.5)
+splat = pygame.mixer.Sound("splat.wav")
+splat.set_volume(0.6)
+hit_wall = pygame.mixer.Sound("hit_wall.wav")
+hit_wall.set_volume(0.4)
+
+get_point = pygame.mixer.Sound("get_point.wav")
+get_point.set_volume(0.2)
+bye = pygame.mixer.Sound("game_over.wav")
+bye.set_volume(0.6)
+
 while True:
     clock.tick(30)
     screen.fill([255, 255, 255])
@@ -54,11 +76,16 @@ while True:
             paddle.rect.centerx = event.pos[0]
 
     if pygame.sprite.spritecollide(paddle, ballGroup, False):
+        hit.play()
         myBall.speed[1] = -myBall.speed[1]
     myBall.move()
 
     if myBall.rect.top >= screen.get_rect().bottom:
         if lives == 0:
+            if done:
+                bye.play()
+                pygame.time.delay(1000)
+                sys.exit()
             final_text1 = "Game Over"
             final_text2 = "Your final score is : " + str(points)
             ft1_font = pygame.font.Font(None, 70)
@@ -68,10 +95,17 @@ while True:
             screen.blit(ft1_surf, [screen.get_width() / 2 - ft1_surf.get_width() / 2, 100])
             screen.blit(ft2_surf, [screen.get_width() / 2 - ft2_surf.get_width() / 2, 200])
             done = True
-        else:
-            lives -= 1
+            pygame.mixer.music.fadeout(2000)
             pygame.time.delay(2000)
+        else:
+            splat.play()
+            lives -= 1
+            pygame.time.delay(1000)
             myBall.rect.topleft = [50, 50]
+            screen.blit(myBall.image, myBall.rect)
+            pygame.display.flip()
+            new_life.play()
+            pygame.time.delay(1000)
     if not done:
         screen.blit(score_text, textpos)
         for i in range(lives):
